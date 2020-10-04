@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
  */
 public class NflGameFileName  {
 
-	//private File file;
+	private File originalFile;
+	
 	private String date;
 	private int year; // 4 digit year
 	private int week;
@@ -30,15 +31,25 @@ public class NflGameFileName  {
 	private Team home;
 	
 	public NflGameFileName() {
+		this((File)null);
+	}
+	
+	public NflGameFileName(String fileName) {
+		this(new File(fileName));
+	}
+	
+	public NflGameFileName(File file) {
 		super();
 		week = 0;
 		year = 0;
 		preseason = false;
 		condensed = false;
+		this.originalFile = file;
 	}
-	
-	public void rename(File oldfile) throws IOException {
+
+	public void rename() throws IOException {
 		
+		File oldfile = this.originalFile;
 		Path source = oldfile.toPath();
 		Files.move(source, source.resolveSibling(generateName()));
 		
@@ -47,8 +58,14 @@ public class NflGameFileName  {
 //		return oldfile.renameTo(newfile);		
 	}
 	
-	public boolean isWellFormed(String fileName) {
+	/**
+	 * True if it's already in the final format we want.
+	 * @param fileName
+	 * @return true if it's already in the final format we want
+	 */
+	public boolean isFilenameFormalized() {
 		
+		String fileName = this.originalFile.getName();
 		return Pattern.matches("\\d{4}.w\\d{2}.[A-Z]{2,3}@[A-Z]{2,3}.\\w{3}", fileName) ||
 				Pattern.matches("\\d{4}.w\\d{2}.[A-Z]{2,3}@[A-Z]{2,3}.con.\\w{3}", fileName) ||
 				Pattern.matches("\\d{4}.ps\\d.[A-Z]{2,3}@[A-Z]{2,3}.\\w{3}", fileName) ||
@@ -56,7 +73,9 @@ public class NflGameFileName  {
 				Pattern.matches("\\d{4}.ps\\d.[A-Z]{2,3}@[A-Z]{2,3}.con.\\w{3}", fileName);
 	}
 	
-	public boolean isATarget(File file) {
+	public boolean isATarget() {
+		
+		File file = this.originalFile;
 		
 		if(file.isDirectory() || file.isHidden())
 			return false;
@@ -65,12 +84,27 @@ public class NflGameFileName  {
 			return false;
 		
 		String fileName = file.getName().toUpperCase();
-		if(fileName.endsWith("MP4") ||fileName.endsWith("MKV") ||fileName.endsWith("AVI") ||fileName.endsWith("TS") )
-			return true; 
-		else
-			return false;
+		if(fileName.endsWith("MP4") ||fileName.endsWith("MKV") ||fileName.endsWith("AVI") ||fileName.endsWith("TS") ) {
+			if(fileNameContainsTeamName(fileName))
+				return true; 
+		}
+			
+		return false;
 	}
 	
+	private boolean fileNameContainsTeamName(String fileName) {
+		// TODO Auto-generated method stub
+		
+		Team[] teams = Team.values();
+		
+		for(Team t:teams) {
+			if(fileName.contains(t.nickname.toUpperCase()))
+				return true;
+		}
+		
+		return false;
+	}
+
 	/**
 	 * Build names like 2015.w04.NYG@DAL.mkv
 	 * @return
@@ -111,9 +145,9 @@ public class NflGameFileName  {
 	 * main method of this class
 	 * @param fileName
 	 */
-	public void parse(String fileName) {
+	public void parse() {
 //		String fileName = file.getName();
-		
+		String fileName = originalFile.getName();
 		week = parseWeek(fileName);
 		//if(week == 0)
 			date = parseDate(fileName);
@@ -353,6 +387,10 @@ public class NflGameFileName  {
 	 */
 	public void setHome(Team home) {
 		this.home = home;
+	}
+
+	public File getOriginalFile() {
+		return originalFile;
 	}
 	
 	

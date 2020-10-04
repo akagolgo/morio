@@ -93,9 +93,9 @@ public class NflGameFileNameTest  {
 		Assert.assertTrue(f.exists());
 		Assert.assertTrue(f.canWrite());
 		
-		NflGameFileName g = new NflGameFileName();
-		g.parse(f.getName());
-		g.rename(f);
+		NflGameFileName g = new NflGameFileName(f);
+		g.parse();
+		g.rename();
 		Assert.assertFalse(f.exists());
 
 		
@@ -108,10 +108,8 @@ public class NflGameFileNameTest  {
 	@Test
 	public void testIsWellFormed() throws Exception { 
 
-		NflGameFileName g = new NflGameFileName();
-		
-		Assert.assertFalse(g.isWellFormed(names[0]));
-		Assert.assertTrue(g.isWellFormed("2014.w13.NYG@JAX.mkv"));
+		Assert.assertFalse(new NflGameFileName(names[0]).isFilenameFormalized());
+		Assert.assertTrue(new NflGameFileName("2014.w13.NYG@JAX.mkv").isFilenameFormalized());
 	} 
 
 	/**
@@ -121,14 +119,16 @@ public class NflGameFileNameTest  {
 	@Test
 	public void testParse() throws Exception { 
 
-		NflGameFileName g = new NflGameFileName();
-		g.parse(names[0]);
+		NflGameFileName g = new NflGameFileName(names[0]);
+		g.parse();
 		Assert.assertEquals("2014.w13.NYG@JAX.con.mkv", g.generateName());
 		
-		g.parse(names[29]);
+		g = new NflGameFileName(names[29]);
+		g.parse();
 		Assert.assertEquals("2014.w02.SF@CHI.mkv", g.generateName());
 		
-		g.parse(names[30]); // NFL-2015-10-04_PHI@WAS.720_RS.W4.mkv
+		g = new NflGameFileName(names[30]);
+		g.parse(); // NFL-2015-10-04_PHI@WAS.720_RS.W4.mkv
 		Assert.assertEquals("2015.w04.PHI@WAS.mkv", g.generateName());
 		
 //		for(int i = 1; i < names.length; i++) {
