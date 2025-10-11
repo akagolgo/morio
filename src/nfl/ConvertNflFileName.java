@@ -1,9 +1,7 @@
 package nfl;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 
 
 /**
@@ -13,61 +11,50 @@ import java.util.ArrayList;
  */
 public class ConvertNflFileName  {
 
-	private final String DIR = "T:/";
-	public ConvertNflFileName() throws FileNotFoundException {
+	private final String DIR = "M:/video/NFL/2025";
+	//private final String DIR = "P:/handbrake";
+	//private final String DIR =  "T:/";
+	public ConvertNflFileName() {
 		super();
-		
-		File targetDir = new File(DIR);
-		if(!targetDir.exists()) {
-			System.out.println("Target dir " + DIR + " does not exist!!");
-			throw new FileNotFoundException("Target dir " + DIR + " does not exist!!");
-		}
-		
 	}
 	
 
-	public void list() throws IOException {
+	/**
+	 * @param week can be null. Unspecified
+	 * @throws IOException
+	 */
+	public void list(String week) throws IOException {
 		
 		File targetDir = new File(DIR);		
 		File[] targetFiles = targetDir.listFiles();
-		ArrayList<NflGameFileName> convertCandidates = new ArrayList<NflGameFileName>();
-		
+		NflGameFileName g = new NflGameFileName();
 
 		System.out.println("Looking at dir " + targetDir.getCanonicalPath());
 		System.out.println("file count: " + targetFiles.length);
 		System.out.println();
 		
 		for(int i = 0; i < targetFiles.length; i++) { 
-			NflGameFileName g = new NflGameFileName(targetFiles[i]);
-
-			if(g.isFilenameFormalized() || (!g.isATarget()))
-				System.out.printf("%2d: %s %s\n", i+1, "skipping", targetFiles[i].getName());
-			
-			else  
-				convertCandidates.add(g);
+			if(g.isWellFormed(targetFiles[i].getName()) || (!g.isATarget(targetFiles[i])))
+				System.out.printf("%2d: %s %s\n", i+1, "skipping", targetFiles[i].getName());			
+			else  {
+				g.parse(targetFiles[i].getName());
+				System.out.printf("%2d: %s\n", i+1, targetFiles[i].getName());
+				System.out.printf("%2d: %s\n\n", i+1, g.generateName(week));
+			}
 		}
-		
 		System.out.println();
-
-		for(NflGameFileName g:convertCandidates) {
-			
-			g.parse();
-			System.out.printf("%s\n",   g.getOriginalFile().getName());
-			System.out.printf("%s\n\n", g.generateName());
-		}
-		
-		System.out.println();
-		System.out.println("use with arg '-c' to execute changes");
+		System.out.println("use '-c' as second arg to execute changes");
 		System.out.println();
 	}
 	
+
 	
-	public void convert() throws IOException {
+	public void convert(String week) throws IOException {
 		
 		File targetDir = new File(DIR);		
 		File[] targetFiles = targetDir.listFiles();
-		ArrayList<NflGameFileName> convertCandidates = new ArrayList<NflGameFileName>();
-		
+		NflGameFileName g = new NflGameFileName();
+
 		System.out.println("Looking at dir " + targetDir.getCanonicalPath());
 		System.out.println("file count: " + targetFiles.length);
 		System.out.println();
@@ -76,30 +63,24 @@ public class ConvertNflFileName  {
 		int errorCount = 0;
 		int skipCount = 0;
 		
-		for(int i = 0; i < targetFiles.length; i++) {
-			NflGameFileName g = new NflGameFileName(targetFiles[i]);
-			if(g.isFilenameFormalized() || (!g.isATarget())) {
+		for(int i = 0; i < targetFiles.length; i++) { 
+			if(g.isWellFormed(targetFiles[i].getName()) || (!g.isATarget(targetFiles[i]))) {
 				System.out.printf("%2d: %s %s\n", i+1, "skipping", targetFiles[i].getName());
 				skipCount++;
-			} else  
-				convertCandidates.add(g);
-		}
-		
-		for(NflGameFileName g:convertCandidates) {
-			
-			g.parse();
-			System.out.printf("%s\n",   g.getOriginalFile().getName());
-			System.out.printf("%s\n\n", g.generateName());
-			try {
-				g.rename();
-				changeCount++;
-			} catch(Exception ex) {
-				System.err.println("error renaming: " + g.getOriginalFile().getName());					
-				System.err.println(ex.getMessage());
-				errorCount++;
+			} else  {
+				g.parse(targetFiles[i].getName());
+				System.out.printf("%2d: %s\n", i+1, targetFiles[i].getName());
+				System.out.printf("%2d: %s\n\n", i+1, g.generateName(week));
+				try {
+					g.rename(targetFiles[i], week);
+					changeCount++;
+				} catch(Exception ex) {
+					System.err.println("error renaming: " + targetFiles[i].getName());					
+					System.err.println(ex.getMessage());
+					errorCount++;
+				}
 			}
 		}
-
 		System.out.println();
 		System.out.println("changeCount: " + changeCount);
 		System.out.println(" errorCount: " + errorCount);
@@ -112,13 +93,17 @@ public class ConvertNflFileName  {
 		ConvertNflFileName cfn = new ConvertNflFileName();
 		
 		if(args.length == 0)
-			cfn.list();
+			System.out.println("bad args. specify week as first arg.");
 		
-		else if(args[0].equals("-c"))
-			cfn.convert();
+		else if(args.length == 1)
+			cfn.list(args[0]);
+		
+		// commit change with week specified
+		else if(args.length == 2 && args[1].equals("-c"))
+			cfn.convert(args[0]);
 		
 		else
-			System.out.println("bad args. try no args.");
+			System.out.println("bad args. specify week as first arg.");
 	}
 
 }

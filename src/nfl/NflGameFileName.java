@@ -18,8 +18,7 @@ import java.util.regex.Pattern;
  */
 public class NflGameFileName  {
 
-	private File originalFile;
-	
+	//private File file;
 	private String date;
 	private int year; // 4 digit year
 	private int week;
@@ -31,27 +30,17 @@ public class NflGameFileName  {
 	private Team home;
 	
 	public NflGameFileName() {
-		this((File)null);
-	}
-	
-	public NflGameFileName(String fileName) {
-		this(new File(fileName));
-	}
-	
-	public NflGameFileName(File file) {
 		super();
 		week = 0;
 		year = 0;
 		preseason = false;
 		condensed = false;
-		this.originalFile = file;
 	}
-
-	public void rename() throws IOException {
+	
+	public void rename(File oldfile, String specifiedWeek) throws IOException {
 		
-		File oldfile = this.originalFile;
 		Path source = oldfile.toPath();
-		Files.move(source, source.resolveSibling(generateName()));
+		Files.move(source, source.resolveSibling(generateName(specifiedWeek)));
 		
 		// below rename doesnt work on windows
 //		File newfile = new File(oldfile.getCanonicalPath() + File.separatorChar + generateName());
@@ -59,13 +48,12 @@ public class NflGameFileName  {
 	}
 	
 	/**
-	 * True if it's already in the final format we want.
+	 * Filename is well formed if it matches one of the below
 	 * @param fileName
-	 * @return true if it's already in the final format we want
+	 * @return
 	 */
-	public boolean isFilenameFormalized() {
+	public boolean isWellFormed(String fileName) {
 		
-		String fileName = this.originalFile.getName();
 		return Pattern.matches("\\d{4}.w\\d{2}.[A-Z]{2,3}@[A-Z]{2,3}.\\w{3}", fileName) ||
 				Pattern.matches("\\d{4}.w\\d{2}.[A-Z]{2,3}@[A-Z]{2,3}.con.\\w{3}", fileName) ||
 				Pattern.matches("\\d{4}.ps\\d.[A-Z]{2,3}@[A-Z]{2,3}.\\w{3}", fileName) ||
@@ -73,9 +61,12 @@ public class NflGameFileName  {
 				Pattern.matches("\\d{4}.ps\\d.[A-Z]{2,3}@[A-Z]{2,3}.con.\\w{3}", fileName);
 	}
 	
-	public boolean isATarget() {
-		
-		File file = this.originalFile;
+	/**
+	 * Is a target if it has video file extension
+	 * @param file
+	 * @return
+	 */
+	public boolean isATarget(File file) {
 		
 		if(file.isDirectory() || file.isHidden())
 			return false;
@@ -84,32 +75,20 @@ public class NflGameFileName  {
 			return false;
 		
 		String fileName = file.getName().toUpperCase();
-		if(fileName.endsWith("MP4") ||fileName.endsWith("MKV") ||fileName.endsWith("AVI") ||fileName.endsWith("TS") ) {
-			if(fileNameContainsTeamName(fileName))
-				return true; 
-		}
-			
-		return false;
+		if(fileName.endsWith("MP4") ||fileName.endsWith("MKV") ||fileName.endsWith("AVI") ||fileName.endsWith("TS") )
+			return true; 
+		else
+			return false;
 	}
 	
-	private boolean fileNameContainsTeamName(String fileName) {
-		// TODO Auto-generated method stub
-		
-		Team[] teams = Team.values();
-		
-		for(Team t:teams) {
-			if(fileName.contains(t.nickname.toUpperCase()))
-				return true;
-		}
-		
-		return false;
-	}
-
+//	public String generateName() {
+//		return this.generateName(null);
+//	}
 	/**
 	 * Build names like 2015.w04.NYG@DAL.mkv
 	 * @return
 	 */
-	public String generateName() {
+	public String generateName(String specifiedWeek) {
 		StringBuilder sb = new StringBuilder();
 		NumberFormat nf = new DecimalFormat("00");
 		
@@ -119,8 +98,10 @@ public class NflGameFileName  {
 		
 		if(week != 0)
 			sb.append(".w").append(nf.format(week));
+		else if(specifiedWeek != null)
+			sb.append(".").append(specifiedWeek);
 		else
-			sb.append(".").append(date==null?"null":date);
+			sb.append(".w");
 		
 		sb.append(".").append(visitor==null?"null":visitor.name()).append("@").append(home==null?"null":home.name());
 		
@@ -142,12 +123,13 @@ public class NflGameFileName  {
 	}
 	
 	/**
-	 * main method of this class
+	 * main method of this class<br>
+	 * break down file name into date, week, team name
 	 * @param fileName
 	 */
-	public void parse() {
+	public void parse(String fileName) {
 //		String fileName = file.getName();
-		String fileName = originalFile.getName();
+		
 		week = parseWeek(fileName);
 		//if(week == 0)
 			date = parseDate(fileName);
@@ -387,10 +369,6 @@ public class NflGameFileName  {
 	 */
 	public void setHome(Team home) {
 		this.home = home;
-	}
-
-	public File getOriginalFile() {
-		return originalFile;
 	}
 	
 	

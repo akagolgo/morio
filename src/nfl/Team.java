@@ -26,7 +26,7 @@ public enum Team {
 	DAL("NFC","E","Dallas","Cowboys"), 
 	NYG("NFC","E","New York","Giants"), 
 	PHI("NFC","E","Philadelphia","Eagles"), 
-	WAS("NFC","E","Washington","Football"), 
+	WAS("NFC","E","Washington","Redskins"), 
 	CHI("NFC","N","Chicago","Bears"), 
 	DET("NFC","N","Detroit","Lions"), 
 	GB("NFC","N","Green Bay","Packers"), 

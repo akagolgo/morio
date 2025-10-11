@@ -84,9 +84,9 @@ public class RenameFiles  {
 	private static void help() {
 		System.out.println();
 		System.out.println("file.RenameFiles flag dir target replacement");
-		System.out.println("use -l to list");
-		System.out.println("use -r to test");
-		System.out.println("use -rr to commit");
+		System.out.println("list dir: -l dir");
+		System.out.println("test rename: -r dir target replacement");
+		System.out.println("commit rename: -rr dir target replacement");
 		System.out.println();
 		System.exit(0);
 	}
