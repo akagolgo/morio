@@ -1,12 +1,9 @@
 package file;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.stream.Stream;
 
 
@@ -18,33 +15,42 @@ import java.util.stream.Stream;
  */
 public class RenameFilesV2  {
 
-	private class SortComparator implements Comparator<File> {
-		@Override
-		public int compare(File o1, File o2) {
-			if(o1.isDirectory() && o2.isFile())
-				return -1;
-			else if(o1.isFile() && o2.isDirectory())
-				return 1;
-			else
-				return o1.getName().compareToIgnoreCase(o2.getName());
-		}
-	}
-	
-	private void replaceText( File dir, String src, String dest, boolean test) throws IOException {
-		
-		File files[] = dir.listFiles();
-		Arrays.sort(files, new SortComparator());
-		String oldName, newName;
-		
-		for( File f:files) {
-			oldName = f.getCanonicalPath();
-			newName = oldName.replace(src, dest);
+	private void replaceText(Path directory, String targetText, String replacement, boolean test) throws IOException {
 
-			System.out.println(f.getName().replace(src, dest));
-			
-			if( !test )
-				f.renameTo(new File(newName));
-		}
+        // Sanity check: Ensure the path exists and is actually a directory
+        if (!Files.exists(directory) || !Files.isDirectory(directory)) {
+            System.err.println("Error: The provided path is not a valid directory.");
+            return;
+        }
+
+        // Use a try-with-resources block to ensure the file stream closes properly
+        try (Stream<Path> stream = Files.list(directory)) {
+            
+            stream.filter(Files::isRegularFile) // Only modify files, skip sub-directories
+                  .forEach(path -> {
+                      String originalName = path.getFileName().toString();
+                      
+                      // Check if the file contains the target text before processing
+                      if (originalName.contains(targetText)) {
+                          String newName = originalName.replace(targetText, replacement);
+                          Path targetPath = path.resolveSibling(newName);
+                          
+                          System.out.println(newName);
+                          
+                    	  if(!test) {
+	                          try {
+	                              Files.move(path, targetPath);
+	                              //System.out.println("Renamed: " + originalName + " -> " + newName);
+	                          } catch (IOException e) {
+	                              System.err.println("Failed to rename " + originalName + ": " + e.getMessage());
+	                          }
+                    	  }
+                      }
+                  });
+
+        } catch (IOException e) {
+            System.err.println("Error reading directory: " + e.getMessage());
+        }		
 	}
 
 	private void listDir(Path dirPath) throws IOException {
@@ -73,10 +79,10 @@ public class RenameFilesV2  {
 		System.out.println("arg used: " + mode);
 					
 		if( mode.equals("-rr"))
-			rf.replaceText(new File(args[1]), args[2], args[3], false);
+			rf.replaceText(Paths.get(args[1]), args[2], args[3], false);
 		
 		else if( mode.equals("-r"))
-			rf.replaceText(new File(args[1]), args[2], args[3], true);
+			rf.replaceText(Paths.get(args[1]), args[2], args[3], true);
 		
 		else if( mode.equals("-l"))
 			rf.listDir(Paths.get(args[1]));
